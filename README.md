@@ -6,7 +6,7 @@ Interactive executive dashboard for OYO Hotels — 119K booking records, 12 char
 An interactive single-page executive dashboard built for CEO/CFO-level analysis of OYO hotel booking data.
 
 ## 🔗 Live Demo
-[View Dashboard](https://yourusername.github.io/oyo-hotel-booking-dashboard/oyo_dashboard.html)
+[View Dashboard](https://bhanusolanki45.github.io/oyo-hotel-booking-dashboard/oyo_dashboard.html)
 
 ## 📊 Overview
 - **Dataset:** 119,390 booking records · 2015–2017 · 32 columns
