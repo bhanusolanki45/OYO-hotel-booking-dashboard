@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OYO Hotels — Executive Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #EE2B2B;
+    --red-light: #ff5252;
+    --red-dim: rgba(238,43,43,0.12);
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --surface2: #f2f2ef;
+    --text: #1a1a1a;
+    --text2: #555;
+    --text3: #999;
+    --border: #e5e5e2;
+    --green: #16a34a;
+    --amber: #d97706;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+    --radius: 14px;
+    --filter-h: 64px;
+  }
+  .dark {
+    --bg: #111110;
+    --surface: #1c1c1a;
+    --surface2: #242422;
+    --text: #f0f0ec;
+    --text2: #aaa;
+    --text3: #666;
+    --border: #2e2e2b;
+    --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+  /* TOP NAV */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    height: 56px; display: flex; align-items: center; padding: 0 24px; gap: 16px;
+    box-shadow: var(--shadow);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-logo { background: var(--red); color: #fff; font-family: 'DM Serif Display'; font-size: 18px; font-weight: 400; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px; }
+  .brand-title { font-size: 13px; font-weight: 600; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; }
+  .nav-spacer { flex: 1; }
+  .nav-badge { background: var(--red-dim); color: var(--red); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .dark-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--text); cursor: pointer; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-family: 'DM Sans'; transition: all 0.2s; }
+  .dark-toggle:hover { border-color: var(--red); }
+  .export-btn { background: var(--red); color: #fff; border: none; cursor: pointer; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; font-family: 'DM Sans'; letter-spacing: 0.3px; }
+
+  /* FILTER BAR */
+  .filter-bar {
+    position: sticky; top: 56px; z-index: 90;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 10px 24px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  }
+  .filter-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; }
+  .filter-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .toggle-btn {
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text2);
+    cursor: pointer; padding: 5px 11px; border-radius: 20px; font-size: 12px; font-weight: 500; font-family: 'DM Sans';
+    transition: all 0.15s;
+  }
+  .toggle-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
+  .filter-sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+  select.filter-select {
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text2);
+    padding: 5px 10px; border-radius: 8px; font-size: 12px; font-family: 'DM Sans';
+    cursor: pointer; outline: none;
+  }
+  .reset-btn { background: none; border: 1px solid var(--border); color: var(--text3); cursor: pointer; padding: 5px 10px; border-radius: 20px; font-size: 11px; font-family: 'DM Sans'; margin-left: 4px; }
+  .reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* MAIN CONTENT */
+  .main { padding: 24px; max-width: 1600px; margin: 0 auto; }
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 12px; margin-top: 8px; }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 28px; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; position: relative; overflow: hidden; box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--red); opacity: 0; transition: opacity 0.2s; }
+  .kpi-card:hover::before { opacity: 1; }
+  .kpi-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+  .kpi-accent { color: var(--red); }
+
+  /* CHART GRID */
+  .chart-grid { display: grid; gap: 20px; }
+  .grid-2col { grid-template-columns: 1fr 1fr; }
+  .grid-3col { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-full { grid-template-columns: 1fr; }
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; box-shadow: var(--shadow); position: relative;
+  }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .chart-sub { font-size: 11px; color: var(--text3); margin-bottom: 16px; }
+  .chart-wrap { position: relative; }
+  canvas { max-width: 100%; }
+
+  /* HEATMAP */
+  .heatmap-table { width: 100%; border-collapse: separate; border-spacing: 3px; }
+  .heatmap-table th { font-size: 10px; font-weight: 600; color: var(--text3); text-align: center; padding: 4px; }
+  .heatmap-table td { border-radius: 4px; text-align: center; font-size: 11px; font-weight: 600; padding: 8px 4px; cursor: default; transition: opacity 0.2s; }
+  .heatmap-table td:hover { opacity: 0.8; }
+
+  /* SCATTER / CUSTOM */
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bar-name { font-size: 12px; color: var(--text2); width: 110px; text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; background: var(--surface2); border-radius: 3px; height: 22px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; display: flex; align-items: center; padding-left: 8px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+  .bar-val { font-size: 11px; font-weight: 600; color: #fff; white-space: nowrap; }
+
+  /* BOX PLOT */
+  .box-container { display: flex; gap: 40px; justify-content: center; align-items: flex-end; padding: 20px 0; }
+  .box-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .box-label { font-size: 12px; font-weight: 600; color: var(--text2); }
+  .box-svg { width: 80px; }
+
+  /* DONUT */
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .donut-row { display: flex; align-items: center; gap: 8px; }
+  .donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .donut-item-name { font-size: 12px; color: var(--text2); flex: 1; }
+  .donut-item-val { font-size: 12px; font-weight: 600; color: var(--text); }
+
+  /* SCATTER DOT PLOT */
+  .sr-scatter { display: flex; align-items: flex-end; gap: 16px; justify-content: center; padding: 16px 0; }
+  .sr-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .sr-dot { border-radius: 50%; background: var(--red); transition: all 0.3s; }
+  .sr-xlabel { font-size: 11px; color: var(--text3); }
+  .sr-ylabel { font-size: 11px; font-weight: 600; color: var(--text); }
+
+  /* INSIGHTS */
+  .insights-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; box-shadow: var(--shadow); margin-top: 24px;
+  }
+  .insights-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .insights-icon { background: var(--red); color: #fff; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .insights-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .insights-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .insight-item { background: var(--surface2); border-radius: 10px; padding: 14px 16px; border-left: 3px solid var(--red); font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .insight-item strong { color: var(--text); }
+
+  /* COUNTRY TABLE */
+  .country-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .country-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surface2); border-radius: 8px; }
+  .country-flag { width: 22px; text-align: center; font-size: 16px; }
+  .country-name { font-size: 12px; font-weight: 600; color: var(--text); flex: 1; }
+  .country-bookings { font-size: 12px; color: var(--text2); }
+  .country-bar-mini { height: 4px; background: var(--red); border-radius: 2px; margin-top: 2px; }
+  .country-col { display: flex; flex-direction: column; }
+
+  /* WATERFALL / DEPOSIT */
+  .deposit-bars { display: flex; gap: 20px; justify-content: center; align-items: flex-end; padding: 12px 0; }
+  .dep-group { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+  .dep-bar-wrap { width: 100%; display: flex; gap: 4px; align-items: flex-end; }
+  .dep-bar { border-radius: 4px 4px 0 0; transition: height 0.5s; min-width: 20px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; }
+  .dep-bar-label { font-size: 10px; font-weight: 700; color: #fff; }
+  .dep-name { font-size: 11px; color: var(--text2); font-weight: 600; text-align: center; }
+  .dep-cr { font-size: 12px; font-weight: 700; text-align: center; }
+
+  footer { text-align: center; padding: 24px; font-size: 11px; color: var(--text3); margin-top: 32px; border-top: 1px solid var(--border); }
+  
+  @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 900px) { .grid-2col, .grid-3col { grid-template-columns: 1fr; } .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .kpi-grid { grid-template-columns: 1fr 1fr; } .main { padding: 12px; } .filter-bar { padding: 8px 12px; } .insights-list { grid-template-columns: 1fr; } }
+
+  .spark { display: inline-block; width: 48px; height: 18px; vertical-align: middle; }
+  .loading-overlay { display: none; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand">
+    <span class="brand-logo">OYO</span>
+    <span class="brand-title">Executive Dashboard · 2015–2017</span>
+  </div>
+  <div class="nav-spacer"></div>
+  <span class="nav-badge">119,390 Records</span>
+  <button class="dark-toggle" onclick="toggleDark()">🌙 Dark</button>
+  <button class="export-btn" onclick="exportDashboard()">⬇ Export PNG</button>
+</nav>
+
+<div class="filter-bar" id="filterBar">
+  <span class="filter-label">Year</span>
+  <div class="filter-group" id="yearFilters">
+    <button class="toggle-btn active" data-year="2015" onclick="toggleYear(this)">2015</button>
+    <button class="toggle-btn active" data-year="2016" onclick="toggleYear(this)">2016</button>
+    <button class="toggle-btn active" data-year="2017" onclick="toggleYear(this)">2017</button>
+  </div>
+  <div class="filter-sep"></div>
+  <span class="filter-label">Hotel</span>
+  <div class="filter-group" id="hotelFilters">
+    <button class="toggle-btn active" data-hotel="resort" onclick="toggleHotel(this)">🏖 Resort</button>
+    <button class="toggle-btn active" data-hotel="city" onclick="toggleHotel(this)">🏙 City</button>
+  </div>
+  <div class="filter-sep"></div>
+  <span class="filter-label">Status</span>
+  <div class="filter-group" id="statusFilters">
+    <button class="toggle-btn active" data-status="all" onclick="setStatus(this)">All</button>
+    <button class="toggle-btn" data-status="0" onclick="setStatus(this)">✅ Confirmed</button>
+    <button class="toggle-btn" data-status="1" onclick="setStatus(this)">❌ Canceled</button>
+  </div>
+  <div class="filter-sep"></div>
+  <span class="filter-label">Segment</span>
+  <select class="filter-select" id="segmentFilter" onchange="applyFilters()">
+    <option value="all">All Segments</option>
+    <option>Online TA</option>
+    <option>Offline TA/TO</option>
+    <option>Groups</option>
+    <option>Direct</option>
+    <option>Corporate</option>
+    <option>Complementary</option>
+    <option>Aviation</option>
+  </select>
+  <span class="filter-label">Customer</span>
+  <select class="filter-select" id="custFilter" onchange="applyFilters()">
+    <option value="all">All Types</option>
+    <option>Transient</option>
+    <option>Transient-Party</option>
+    <option>Contract</option>
+    <option>Group</option>
+  </select>
+  <button class="reset-btn" onclick="resetFilters()">↺ Reset</button>
+</div>
+
+<div class="main">
+  <!-- KPIs -->
+  <div class="section-label">Key Performance Indicators</div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Total Bookings</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">All reservations</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="kpi-rev">—</div><div class="kpi-sub">ADR × nights stayed</div></div>
+    <div class="kpi-card"><div class="kpi-label">Cancellation Rate</div><div class="kpi-value kpi-accent" id="kpi-cancel">—</div><div class="kpi-sub" id="kpi-cancel-sub">of total bookings</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg ADR</div><div class="kpi-value" id="kpi-adr">—</div><div class="kpi-sub">Per night (₹)</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Lead Time</div><div class="kpi-value" id="kpi-lead">—</div><div class="kpi-sub">Days before arrival</div></div>
+    <div class="kpi-card"><div class="kpi-label">Repeat Guest Rate</div><div class="kpi-value" id="kpi-repeat">—</div><div class="kpi-sub">Returning guests</div></div>
+  </div>
+
+  <!-- Row 1: Monthly trend + Revenue -->
+  <div class="section-label">Trends & Revenue</div>
+  <div class="chart-grid grid-2col" style="margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">Monthly Bookings Trend</div>
+      <div class="chart-sub">Resort vs City Hotel · Cancellations overlay</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chart-monthly"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Revenue Over Time</div>
+      <div class="chart-sub">ADR × total nights · Peak months highlighted</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chart-revenue"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 2: Cancellation by segment + Heatmap -->
+  <div class="chart-grid grid-2col" style="margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">Cancellation Rate by Market Segment</div>
+      <div class="chart-sub">🔴 >40% · 🟡 20-40% · 🟢 <20%</div>
+      <div id="seg-bars" style="padding-top:8px"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Cancellation Rate Heatmap</div>
+      <div class="chart-sub">Month × Year · Color = cancellation %</div>
+      <div id="heatmap-wrap"></div>
+    </div>
+  </div>
+
+  <!-- Row 3: ADR dist + Lead time -->
+  <div class="chart-grid grid-2col" style="margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">ADR Distribution — Box Plot</div>
+      <div class="chart-sub">Resort vs City Hotel · Median, IQR, range</div>
+      <div id="box-plot-wrap"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Booking Lead Time Distribution</div>
+      <div class="chart-sub">By time bucket · Split Resort vs City</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chart-leadtime"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 4: Countries + Room match -->
+  <div class="chart-grid grid-2col" style="margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">Top 15 Guest Countries</div>
+      <div class="chart-sub">Bookings · Avg ADR · Cancellation rate</div>
+      <div id="country-bars" style="padding-top:8px"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Room Type Match Analysis</div>
+      <div class="chart-sub">Reserved vs Assigned room type</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chart-roommatch"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 5: Customer donut + Special requests -->
+  <div class="chart-grid grid-2col" style="margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">Customer Type Breakdown</div>
+      <div class="chart-sub">Revenue contribution per segment</div>
+      <div style="display:flex;gap:20px;align-items:center">
+        <div class="chart-wrap" style="height:200px;width:200px;flex-shrink:0"><canvas id="chart-donut"></canvas></div>
+        <div class="donut-legend" id="donut-legend"></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Special Requests vs Cancellation Rate</div>
+      <div class="chart-sub">Guests with more requests cancel less</div>
+      <div id="sr-scatter-wrap"></div>
+    </div>
+  </div>
+
+  <!-- Row 6: Weekend/Weekday + Deposit -->
+  <div class="chart-grid grid-2col" style="margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">Weekend vs Weekday Stays</div>
+      <div class="chart-sub">Average nights per booking by month</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chart-weekday"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Deposit Type Impact on Cancellations</div>
+      <div class="chart-sub">Booking volume vs cancellation rate</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chart-deposit"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="insights-panel">
+    <div class="insights-header">
+      <div class="insights-icon">💡</div>
+      <div class="insights-title">Automated Executive Insights</div>
+      <div class="nav-spacer"></div>
+      <span style="font-size:11px;color:var(--text3)">Auto-generated from filtered data</span>
+    </div>
+    <div class="insights-list" id="insights-list"></div>
+  </div>
+
+  <footer>OYO Hotels Executive Dashboard · Data: 2015–2017 · 119,390 booking records · Built for CEO/CFO view</footer>
+</div>
+
+<script>
+const D = {"kpis": {"total": 119390, "canceled": 44224, "cancel_rate": 37.04, "total_revenue": 42723498, "avg_adr": 101.83, "avg_lead": 104.0, "repeat_rate": 3.19}, "monthly": [{"y": "2015", "mi": 6, "label": "Jul 2015", "b": 2776, "c": 1259, "rev": 1146862, "resort": 1378, "city": 1398}, {"y": "2015", "mi": 7, "label": "Aug 2015", "b": 3889, "c": 1598, "rev": 1698555, "resort": 1409, "city": 2480}, {"y": "2015", "mi": 8, "label": "Sep 2015", "b": 5114, "c": 2094, "rev": 1666155, "resort": 1585, "city": 3529}, {"y": "2015", "mi": 9, "label": "Oct 2015", "b": 4957, "c": 1732, "rev": 1170206, "resort": 1571, "city": 3386}, {"y": "2015", "mi": 10, "label": "Nov 2015", "b": 2340, "c": 486, "rev": 462989, "resort": 1105, "city": 1235}, {"y": "2015", "mi": 11, "label": "Dec 2015", "b": 2920, "c": 973, "rev": 673349, "resort": 1266, "city": 1654}, {"y": "2016", "mi": 0, "label": "Jan 2016", "b": 2248, "c": 557, "rev": 403695, "resort": 884, "city": 1364}, {"y": "2016", "mi": 1, "label": "Feb 2016", "b": 3891, "c": 1337, "rev": 788225, "resort": 1520, "city": 2371}, {"y": "2016", "mi": 2, "label": "Mar 2016", "b": 4824, "c": 1477, "rev": 1226928, "resort": 1778, "city": 3046}, {"y": "2016", "mi": 3, "label": "Apr 2016", "b": 5428, "c": 2061, "rev": 1522984, "resort": 1867, "city": 3561}, {"y": "2016", "mi": 4, "label": "May 2016", "b": 5478, "c": 1915, "rev": 1655740, "resort": 1802, "city": 3676}, {"y": "2016", "mi": 5, "label": "Jun 2016", "b": 5292, "c": 2096, "rev": 1898485, "resort": 1369, "city": 3923}, {"y": "2016", "mi": 6, "label": "Jul 2016", "b": 4572, "c": 1499, "rev": 2307893, "resort": 1441, "city": 3131}, {"y": "2016", "mi": 7, "label": "Aug 2016", "b": 5063, "c": 1825, "rev": 2897536, "resort": 1685, "city": 3378}, {"y": "2016", "mi": 8, "label": "Sep 2016", "b": 5394, "c": 2022, "rev": 2065762, "resort": 1523, "city": 3871}, {"y": "2016", "mi": 9, "label": "Oct 2016", "b": 6203, "c": 2514, "rev": 1839343, "resort": 1984, "city": 4219}, {"y": "2016", "mi": 10, "label": "Nov 2016", "b": 4454, "c": 1636, "rev": 1137167, "resort": 1332, "city": 3122}, {"y": "2016", "mi": 11, "label": "Dec 2016", "b": 3860, "c": 1398, "rev": 1126844, "resort": 1382, "city": 2478}, {"y": "2017", "mi": 0, "label": "Jan 2017", "b": 3681, "c": 1250, "rev": 869383, "resort": 1309, "city": 2372}, {"y": "2017", "mi": 1, "label": "Feb 2017", "b": 4177, "c": 1359, "rev": 1030747, "resort": 1583, "city": 2594}, {"y": "2017", "mi": 2, "label": "Mar 2017", "b": 4970, "c": 1672, "rev": 1412293, "resort": 1558, "city": 3412}, {"y": "2017", "mi": 3, "label": "Apr 2017", "b": 5661, "c": 2463, "rev": 2187482, "resort": 1742, "city": 3919}, {"y": "2017", "mi": 4, "label": "May 2017", "b": 6313, "c": 2762, "rev": 2452386, "resort": 1757, "city": 4556}, {"y": "2017", "mi": 5, "label": "Jun 2017", "b": 5647, "c": 2439, "rev": 2600902, "resort": 1676, "city": 3971}, {"y": "2017", "mi": 6, "label": "Jul 2017", "b": 5313, "c": 1984, "rev": 3132959, "resort": 1754, "city": 3559}, {"y": "2017", "mi": 7, "label": "Aug 2017", "b": 4925, "c": 1816, "rev": 3348627, "resort": 1800, "city": 3125}], "segments": [{"name": "Online TA", "b": 56477, "c": 20739, "rate": 36.7}, {"name": "Offline TA/TO", "b": 24219, "c": 8311, "rate": 34.3}, {"name": "Groups", "b": 19811, "c": 12097, "rate": 61.1}, {"name": "Direct", "b": 12606, "c": 1934, "rate": 15.3}, {"name": "Corporate", "b": 5295, "c": 992, "rate": 18.7}, {"name": "Complementary", "b": 743, "c": 97, "rate": 13.1}, {"name": "Aviation", "b": 237, "c": 52, "rate": 21.9}, {"name": "Undefined", "b": 2, "c": 2, "rate": 100.0}], "adr_box": {"resort": {"min": 0.3, "q1": 52.0, "med": 76.8, "q3": 126.4, "max": 238.0, "mean": 96.8}, "city": {"min": 0.5, "q1": 80.0, "med": 100.0, "q3": 126.0, "max": 195.0, "mean": 106.9}}, "top20": [{"c": "PRT", "b": 48590, "adr": 92.0, "cr": 56.6}, {"c": "GBR", "b": 12129, "adr": 96.0, "cr": 20.2}, {"c": "FRA", "b": 10415, "adr": 109.6, "cr": 18.6}, {"c": "ESP", "b": 8568, "adr": 117.0, "cr": 25.4}, {"c": "DEU", "b": 7287, "adr": 104.4, "cr": 16.7}, {"c": "ITA", "b": 3766, "adr": 113.9, "cr": 35.4}, {"c": "IRL", "b": 3375, "adr": 98.2, "cr": 24.7}, {"c": "BEL", "b": 2342, "adr": 113.8, "cr": 20.2}, {"c": "BRA", "b": 2224, "adr": 111.0, "cr": 37.3}, {"c": "NLD", "b": 2104, "adr": 108.1, "cr": 18.4}, {"c": "USA", "b": 2097, "adr": 123.0, "cr": 23.9}, {"c": "CHE", "b": 1730, "adr": 121.8, "cr": 24.7}, {"c": "CN", "b": 1279, "adr": 108.7, "cr": 19.9}, {"c": "AUT", "b": 1263, "adr": 106.2, "cr": 18.2}, {"c": "SWE", "b": 1024, "adr": 112.9, "cr": 22.2}, {"c": "CHN", "b": 999, "adr": 110.5, "cr": 46.2}, {"c": "POL", "b": 919, "adr": 107.1, "cr": 23.4}, {"c": "ISR", "b": 669, "adr": 110.7, "cr": 25.3}, {"c": "RUS", "b": 632, "adr": 118.7, "cr": 37.8}, {"c": "NOR", "b": 607, "adr": 121.6, "cr": 29.8}], "lead_time": {"labels": ["0-7d", "8-30d", "31-90d", "91-180d", "181-365d", "365d+"], "b": [19746, 18960, 29553, 26439, 21544, 3148], "c": [1902, 5283, 11141, 11821, 11947, 2130], "resort": [8938, 6406, 8756, 8216, 7300, 444], "city": [10808, 12554, 20797, 18223, 14244, 2704]}, "heatmap": [{"month": "Jan", "2015": 0, "2016": 24.8, "2017": 34.0}, {"month": "Feb", "2015": 0, "2016": 34.4, "2017": 32.5}, {"month": "Mar", "2015": 0, "2016": 30.6, "2017": 33.6}, {"month": "Apr", "2015": 0, "2016": 38.0, "2017": 43.5}, {"month": "May", "2015": 0, "2016": 35.0, "2017": 43.8}, {"month": "Jun", "2015": 0, "2016": 39.6, "2017": 43.2}, {"month": "Jul", "2015": 45.4, "2016": 32.8, "2017": 37.3}, {"month": "Aug", "2015": 41.1, "2016": 36.0, "2017": 36.9}, {"month": "Sep", "2015": 40.9, "2016": 37.5, "2017": 0}, {"month": "Oct", "2015": 34.9, "2016": 40.5, "2017": 0}, {"month": "Nov", "2015": 20.8, "2016": 36.7, "2017": 0}, {"month": "Dec", "2015": 33.3, "2016": 36.2, "2017": 0}], "room": {"Resort": {"match": 32335, "mismatch": 7725}, "City": {"match": 72138, "mismatch": 7192}}, "customer": [{"t": "Transient", "b": 89613, "rev": 34199104}, {"t": "Transient-Party", "b": 25124, "rev": 6544636}, {"t": "Contract", "b": 4076, "rev": 1839078}, {"t": "Group", "b": 577, "rev": 140680}], "special_req": [{"sr": 0, "b": 70318, "cr": 47.7}, {"sr": 1, "b": 33226, "cr": 22.0}, {"sr": 2, "b": 12969, "cr": 22.1}, {"sr": 3, "b": 2497, "cr": 17.9}, {"sr": 4, "b": 340, "cr": 10.6}, {"sr": 5, "b": 40, "cr": 5.0}], "weekday": [{"month": "Jan", "wend": 0.78, "wday": 2.19}, {"month": "Feb", "wend": 0.85, "wday": 2.18}, {"month": "Mar", "wend": 0.86, "wday": 2.56}, {"month": "Apr", "wend": 0.95, "wday": 2.42}, {"month": "May", "wend": 0.87, "wday": 2.41}, {"month": "Jun", "wend": 0.92, "wday": 2.66}, {"month": "Jul", "wend": 1.12, "wday": 2.81}, {"month": "Aug", "wend": 1.06, "wday": 2.84}, {"month": "Sep", "wend": 0.94, "wday": 2.52}, {"month": "Oct", "wend": 0.9, "wday": 2.23}, {"month": "Nov", "wend": 0.79, "wday": 2.4}, {"month": "Dec", "wend": 0.87, "wday": 2.36}], "deposit": [{"t": "No Deposit", "b": 104641, "c": 29694, "cr": 28.4}, {"t": "Refundable", "b": 162, "c": 36, "cr": 22.2}, {"t": "Non Refund", "b": 14587, "c": 14494, "cr": 99.4}]};
+
+// Filter state
+let activeYears = new Set(['2015','2016','2017']);
+let activeHotels = new Set(['resort','city']);
+let activeStatus = 'all';
+let activeSeg = 'all';
+let activeCust = 'all';
+
+// Chart instances
+const charts = {};
+
+function fmt(n) { if(n>=1e6) return '₹'+(n/1e6).toFixed(1)+'M'; if(n>=1e3) return n>=100000?'₹'+(n/1e5).toFixed(1)+'L':'₹'+(n/1e3).toFixed(1)+'K'; return n.toLocaleString(); }
+function fmtNum(n) { if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(0)+'K'; return n.toLocaleString(); }
+
+// --- FILTER HELPERS ---
+function getFilteredMonthly() {
+  return D.monthly.filter(m => {
+    if(!activeYears.has(m.y)) return false;
+    return true;
+  }).map(m => {
+    let b = 0, c = 0, rev = 0, resort = 0, city = 0;
+    if(activeHotels.has('resort')) { resort = m.resort; b += m.resort; }
+    if(activeHotels.has('city')) { city = m.city; b += m.city; }
+    const ratio = m.b > 0 ? b/m.b : 1;
+    c = Math.round(m.c * ratio);
+    rev = Math.round(m.rev * ratio);
+    return {...m, b, c, rev, resort, city};
+  });
+}
+
+function getFilteredSegments() {
+  return D.segments.map(s => {
+    if(activeSeg !== 'all' && s.name !== activeSeg) return null;
+    return s;
+  }).filter(Boolean);
+}
+
+function getFilteredKPIs() {
+  const months = getFilteredMonthly();
+  const total = months.reduce((s,m)=>s+m.b,0);
+  const canceled = months.reduce((s,m)=>s+m.c,0);
+  const rev = months.reduce((s,m)=>s+m.rev,0);
+  return {total, canceled, cancel_rate: total>0?(canceled/total*100).toFixed(1):0, total_revenue: rev};
+}
+
+// --- UPDATE KPIs ---
+function updateKPIs() {
+  const kpis = getFilteredKPIs();
+  document.getElementById('kpi-total').textContent = fmtNum(kpis.total);
+  document.getElementById('kpi-rev').textContent = fmt(kpis.total_revenue);
+  document.getElementById('kpi-cancel').textContent = kpis.cancel_rate + '%';
+  document.getElementById('kpi-cancel-sub').textContent = fmtNum(kpis.canceled) + ' cancellations';
+  document.getElementById('kpi-adr').textContent = '₹' + D.kpis.avg_adr;
+  document.getElementById('kpi-lead').textContent = D.kpis.avg_lead + 'd';
+  document.getElementById('kpi-repeat').textContent = D.kpis.repeat_rate + '%';
+}
+
+// --- CHART COLORS ---
+const RED = '#EE2B2B';
+const RED_A = 'rgba(238,43,43,0.15)';
+const BLUE = '#2563eb';
+const BLUE_A = 'rgba(37,99,235,0.15)';
+const GREEN = '#16a34a';
+const AMBER = '#d97706';
+const PURPLE = '#7c3aed';
+const TEAL = '#0891b2';
+const PALETTE = [RED, BLUE, GREEN, AMBER, PURPLE, TEAL, '#be185d', '#065f46'];
+
+function isDark() { return document.documentElement.classList.contains('dark'); }
+function textColor() { return isDark() ? '#f0f0ec' : '#1a1a1a'; }
+function gridColor() { return isDark() ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'; }
+
+function baseOpts(title) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: textColor(), font: { family: 'DM Sans', size: 11 }, boxWidth: 12, padding: 12 } },
+      tooltip: { backgroundColor: isDark()?'#1c1c1a':'#fff', titleColor: textColor(), bodyColor: isDark()?'#aaa':'#555', borderColor: isDark()?'#2e2e2b':'#e5e5e2', borderWidth:1, padding:10, titleFont:{family:'DM Sans',weight:'bold'}, bodyFont:{family:'DM Sans'} }
+    },
+    scales: {
+      x: { ticks: { color: textColor(), font:{family:'DM Sans',size:10} }, grid: { color: gridColor() } },
+      y: { ticks: { color: textColor(), font:{family:'DM Sans',size:10} }, grid: { color: gridColor() } }
+    }
+  };
+}
+
+// --- CHART 1: Monthly Trend ---
+function renderMonthly() {
+  const months = getFilteredMonthly();
+  const labels = months.map(m=>m.label);
+  const resort = months.map(m=>m.resort);
+  const city = months.map(m=>m.city);
+  const canceled = months.map(m=>m.c);
+
+  const ctx = document.getElementById('chart-monthly').getContext('2d');
+  if(charts.monthly) charts.monthly.destroy();
+  charts.monthly = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {type:'line', label:'Resort Hotel', data:resort, borderColor:AMBER, backgroundColor:'transparent', tension:0.4, pointRadius:3, borderWidth:2},
+        {type:'line', label:'City Hotel', data:city, borderColor:BLUE, backgroundColor:'transparent', tension:0.4, pointRadius:3, borderWidth:2},
+        {type:'bar', label:'Cancellations', data:canceled, backgroundColor:'rgba(238,43,43,0.3)', borderColor:RED, borderWidth:1, yAxisID:'y2'}
+      ]
+    },
+    options: {
+      ...baseOpts(),
+      interaction: {mode:'index',intersect:false},
+      plugins: {...baseOpts().plugins},
+      scales: {
+        x: {ticks:{color:textColor(),font:{family:'DM Sans',size:9},maxRotation:45}, grid:{color:gridColor()}},
+        y: {ticks:{color:textColor(),font:{family:'DM Sans',size:10}}, grid:{color:gridColor()}, title:{display:true,text:'Bookings',color:textColor(),font:{size:10,family:'DM Sans'}}},
+        y2: {position:'right',ticks:{color:RED,font:{family:'DM Sans',size:10}}, grid:{display:false}, title:{display:true,text:'Cancellations',color:RED,font:{size:10,family:'DM Sans'}}}
+      }
+    }
+  });
+}
+
+// --- CHART 2: Revenue ---
+function renderRevenue() {
+  const months = getFilteredMonthly();
+  const labels = months.map(m=>m.label);
+  const revs = months.map(m=>m.rev);
+  const maxRev = Math.max(...revs);
+
+  const ctx = document.getElementById('chart-revenue').getContext('2d');
+  if(charts.revenue) charts.revenue.destroy();
+  const gradient = ctx.createLinearGradient(0,0,0,240);
+  gradient.addColorStop(0,'rgba(238,43,43,0.4)');
+  gradient.addColorStop(1,'rgba(238,43,43,0.02)');
+
+  charts.revenue = new Chart(ctx, {
+    type:'line',
+    data: {
+      labels,
+      datasets: [{
+        label:'Revenue (₹)',
+        data: revs,
+        borderColor: RED, backgroundColor: gradient, fill: true, tension: 0.4, pointRadius: 4,
+        pointBackgroundColor: revs.map(v=>v===maxRev?'#fff':'transparent'),
+        pointBorderColor: revs.map(v=>v===maxRev?RED:'transparent'),
+        pointBorderWidth: 2, borderWidth: 2
+      }]
+    },
+    options: {
+      ...baseOpts(),
+      plugins: {
+        ...baseOpts().plugins,
+        annotation: {}
+      },
+      scales: {
+        x: {ticks:{color:textColor(),font:{family:'DM Sans',size:9},maxRotation:45}, grid:{color:gridColor()}},
+        y: {ticks:{color:textColor(),font:{family:'DM Sans',size:10},callback:v=>'₹'+(v/1e6).toFixed(1)+'M'}, grid:{color:gridColor()}}
+      }
+    }
+  });
+}
+
+// --- CHART 3: Segment bars (custom) ---
+function renderSegBars() {
+  const segs = getFilteredSegments().sort((a,b)=>b.rate-a.rate);
+  const maxB = Math.max(...segs.map(s=>s.b));
+  const el = document.getElementById('seg-bars');
+  el.innerHTML = segs.map(s => {
+    const color = s.rate > 40 ? RED : s.rate > 20 ? AMBER : GREEN;
+    const pct = (s.b/maxB*100).toFixed(1);
+    return `<div class="bar-row">
+      <div class="bar-name" title="${s.name}">${s.name}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${color}">
+          <span class="bar-val">${s.rate}%</span>
+        </div>
+      </div>
+      <span style="font-size:11px;color:var(--text3);width:52px;text-align:right">${fmtNum(s.b)}</span>
+    </div>`;
+  }).join('');
+}
+
+// --- CHART 4: Box Plot (SVG custom) ---
+function renderBoxPlot() {
+  const box = D.adr_box;
+  const el = document.getElementById('box-plot-wrap');
+  const W=320, H=200, pad=40;
+
+  const allVals = [box.resort.min, box.resort.max, box.city.min, box.city.max];
+  const minV=0, maxV=Math.max(...allVals)+20;
+  const scale = v => H - pad - ((v-minV)/(maxV-minV))*(H-2*pad);
+
+  function drawBox(xCenter, stats, color) {
+    const {min,q1,med,q3,max,mean} = stats;
+    const y_min=scale(min), y_q1=scale(q1), y_med=scale(med), y_q3=scale(q3), y_max=scale(max);
+    const boxW=50, halfW=boxW/2;
+    return `
+      <line x1="${xCenter}" y1="${y_min}" x2="${xCenter}" y2="${y_q1}" stroke="${color}" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <line x1="${xCenter-15}" y1="${y_min}" x2="${xCenter+15}" y2="${y_min}" stroke="${color}" stroke-width="2"/>
+      <rect x="${xCenter-halfW}" y="${y_q3}" width="${boxW}" height="${y_q1-y_q3}" fill="${color}22" stroke="${color}" stroke-width="2" rx="4"/>
+      <line x1="${xCenter-halfW}" y1="${y_med}" x2="${xCenter+halfW}" y2="${y_med}" stroke="${color}" stroke-width="3"/>
+      <line x1="${xCenter}" y1="${y_q3}" x2="${xCenter}" y2="${y_max}" stroke="${color}" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <line x1="${xCenter-15}" y1="${y_max}" x2="${xCenter+15}" y2="${y_max}" stroke="${color}" stroke-width="2"/>
+      <circle cx="${xCenter}" cy="${scale(mean)}" r="4" fill="${color}" stroke="white" stroke-width="1.5"/>
+    `;
+  }
+
+  const tc = isDark()?'#aaa':'#555';
+  const gc = isDark()?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.06)';
+  const ticks = [0,50,100,150,200,250].filter(v=>v<=maxV+10);
+  const gridLines = ticks.map(v=>`<line x1="${pad}" y1="${scale(v)}" x2="${W-pad}" y2="${scale(v)}" stroke="${gc}" stroke-width="1"/><text x="${pad-5}" y="${scale(v)+4}" font-size="10" text-anchor="end" fill="${tc}" font-family="DM Sans">${v}</text>`).join('');
+
+  el.innerHTML = `<svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${gridLines}
+    ${drawBox(110, box.resort, AMBER)}
+    ${drawBox(210, box.city, BLUE)}
+    <text x="110" y="${H-8}" text-anchor="middle" font-size="12" font-weight="600" fill="${AMBER}" font-family="DM Sans">Resort</text>
+    <text x="210" y="${H-8}" text-anchor="middle" font-size="12" font-weight="600" fill="${BLUE}" font-family="DM Sans">City</text>
+    <text x="110" y="${scale(box.resort.med)-8}" text-anchor="middle" font-size="10" fill="${tc}" font-family="DM Sans">₹${box.resort.med}</text>
+    <text x="210" y="${scale(box.city.med)-8}" text-anchor="middle" font-size="10" fill="${tc}" font-family="DM Sans">₹${box.city.med}</text>
+    <text x="${W/2}" y="14" text-anchor="middle" font-size="11" fill="${tc}" font-family="DM Sans">● Mean  ▬ Median  □ IQR  ╎ Range</text>
+  </svg>`;
+}
+
+// --- CHART 5: Lead time ---
+function renderLeadTime() {
+  const lt = D.lead_time;
+  const ctx = document.getElementById('chart-leadtime').getContext('2d');
+  if(charts.leadtime) charts.leadtime.destroy();
+  charts.leadtime = new Chart(ctx, {
+    type:'bar',
+    data: {
+      labels: lt.labels,
+      datasets: [
+        {label:'Resort Hotel', data:lt.resort, backgroundColor:AMBER+'aa', borderColor:AMBER, borderWidth:1},
+        {label:'City Hotel', data:lt.city, backgroundColor:BLUE+'aa', borderColor:BLUE, borderWidth:1}
+      ]
+    },
+    options: { ...baseOpts(), scales: {
+      x: {stacked:false, ticks:{color:textColor(),font:{family:'DM Sans',size:10}}, grid:{color:gridColor()}},
+      y: {ticks:{color:textColor(),font:{family:'DM Sans',size:10},callback:v=>fmtNum(v)}, grid:{color:gridColor()}}
+    }}
+  });
+}
+
+// --- CHART 6 (heatmap) ---
+function renderHeatmap() {
+  const h = D.heatmap;
+  const years = ['2015','2016','2017'];
+  const el = document.getElementById('heatmap-wrap');
+  
+  // Find max for scaling
+  const vals = h.flatMap(r=>years.map(y=>r[y]||0)).filter(v=>v>0);
+  const minV=Math.min(...vals), maxV=Math.max(...vals);
+
+  function heatColor(v) {
+    if(!v) return isDark()?'#2e2e2b':'#f2f2ef';
+    const t=(v-minV)/(maxV-minV);
+    const r=Math.round(255*(0.2+0.8*t));
+    const g=Math.round(255*(1-t)*0.3);
+    const b=Math.round(255*(1-t)*0.1);
+    return `rgb(${r},${g},${b})`;
+  }
+  function textC(v) { return v>35?'#fff':isDark()?'#f0f0ec':'#1a1a1a'; }
+
+  el.innerHTML = `<table class="heatmap-table">
+    <tr><th>Month</th>${years.map(y=>`<th>${y}</th>`).join('')}</tr>
+    ${h.map(row=>`<tr>
+      <td style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding-left:4px">${row.month}</td>
+      ${years.map(y=>{
+        const v=row[y]||0;
+        const bg=heatColor(v);
+        const tc=textC(v);
+        return `<td style="background:${bg};color:${tc}" title="${row.month} ${y}: ${v}%">${v||'–'}</td>`;
+      }).join('')}
+    </tr>`).join('')}
+  </table>`;
+}
+
+// --- CHART 7: Room Match ---
+function renderRoomMatch() {
+  const rm = D.room;
+  const ctx = document.getElementById('chart-roommatch').getContext('2d');
+  if(charts.roommatch) charts.roommatch.destroy();
+  charts.roommatch = new Chart(ctx, {
+    type:'doughnut',
+    data: {
+      labels:['Resort Match','Resort Mismatch','City Match','City Mismatch'],
+      datasets:[{
+        data:[rm.Resort.match, rm.Resort.mismatch, rm.City.match, rm.City.mismatch],
+        backgroundColor:[AMBER+'cc',RED+'cc',BLUE+'cc','#7c3aed'+'cc'],
+        borderWidth:0
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{color:textColor(),font:{family:'DM Sans',size:10},padding:10}},
+        tooltip:{backgroundColor:isDark()?'#1c1c1a':'#fff',titleColor:textColor(),bodyColor:isDark()?'#aaa':'#555',borderColor:isDark()?'#2e2e2b':'#e5e5e2',borderWidth:1,callbacks:{label:ctx=>{const total=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${fmtNum(ctx.raw)} (${(ctx.raw/total*100).toFixed(1)}%)`;}}},
+        title:{display:true,text:[`Resort mismatch: ${(rm.Resort.mismatch/(rm.Resort.match+rm.Resort.mismatch)*100).toFixed(1)}% · City mismatch: ${(rm.City.mismatch/(rm.City.match+rm.City.mismatch)*100).toFixed(1)}%`],color:isDark()?'#aaa':'#555',font:{size:10,family:'DM Sans'}}
+      }
+    }
+  });
+}
+
+// --- CHART 8: Customer Donut ---
+function renderDonut() {
+  const cust = D.customer;
+  const ctx = document.getElementById('chart-donut').getContext('2d');
+  if(charts.donut) charts.donut.destroy();
+  const colors = [RED, BLUE, GREEN, AMBER];
+  charts.donut = new Chart(ctx, {
+    type:'doughnut',
+    data:{labels:cust.map(c=>c.t),datasets:[{data:cust.map(c=>c.b),backgroundColor:colors.map(c=>c+'cc'),borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false},tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:ctx=>{const total=cust.reduce((a,b)=>a+b.b,0);return ` ${fmtNum(ctx.raw)} (${(ctx.raw/total*100).toFixed(1)}%)`;}}}}
+  }});
+
+  const totalRev = cust.reduce((a,b)=>a+b.rev,0);
+  document.getElementById('donut-legend').innerHTML = cust.map((c,i)=>`
+    <div class="donut-row">
+      <div class="donut-dot" style="background:${colors[i]}"></div>
+      <div class="donut-item-name">${c.t}</div>
+      <div class="donut-item-val">${(c.rev/totalRev*100).toFixed(1)}%</div>
+    </div>`).join('');
+}
+
+// --- CHART 9: Special Requests Scatter ---
+function renderSRScatter() {
+  const sr = D.special_req;
+  const maxCR = Math.max(...sr.map(s=>s.cr));
+  const maxB = Math.max(...sr.map(s=>s.b));
+  const el = document.getElementById('sr-scatter-wrap');
+  el.innerHTML = `<div class="sr-scatter">${sr.map(s=>{
+    const size = Math.max(20, Math.min(70, s.b/maxB*70));
+    const opacity = 0.4 + (s.cr/100)*0.6;
+    return `<div class="sr-col">
+      <div class="sr-ylabel">${s.cr}%</div>
+      <div class="sr-dot" style="width:${size}px;height:${size}px;opacity:${opacity};background:${s.cr>40?RED:s.cr>25?AMBER:GREEN}" title="${s.b} bookings with ${s.sr} special requests: ${s.cr}% cancel"></div>
+      <div class="sr-xlabel">${s.sr} req${s.sr!==1?'s':''}</div>
+      <div style="font-size:10px;color:var(--text3)">${fmtNum(s.b)}</div>
+    </div>`;
+  }).join('')}</div>
+  <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:4px">Bubble size = booking volume · Color = cancellation level · Guests with 0 requests: 47.7% cancel vs 5% with 5 requests</div>`;
+}
+
+// --- CHART 10: Weekend/Weekday ---
+function renderWeekday() {
+  const wk = D.weekday;
+  const ctx = document.getElementById('chart-weekday').getContext('2d');
+  if(charts.weekday) charts.weekday.destroy();
+  charts.weekday = new Chart(ctx, {
+    type:'bar',
+    data:{labels:wk.map(w=>w.month),datasets:[
+      {label:'Weekend Nights',data:wk.map(w=>w.wend),backgroundColor:RED+'aa',borderColor:RED,borderWidth:1},
+      {label:'Weekday Nights',data:wk.map(w=>w.wday),backgroundColor:BLUE+'aa',borderColor:BLUE,borderWidth:1}
+    ]},
+    options:{...baseOpts(),scales:{
+      x:{stacked:false,ticks:{color:textColor(),font:{family:'DM Sans',size:10}},grid:{color:gridColor()}},
+      y:{ticks:{color:textColor(),font:{family:'DM Sans',size:10}},grid:{color:gridColor()},title:{display:true,text:'Avg Nights/Booking',color:textColor(),font:{size:10,family:'DM Sans'}}}
+    }}
+  });
+}
+
+// --- CHART 11: Deposit ---
+function renderDeposit() {
+  const dep = D.deposit;
+  const ctx = document.getElementById('chart-deposit').getContext('2d');
+  if(charts.deposit) charts.deposit.destroy();
+  const colors = [BLUE, GREEN, RED];
+  charts.deposit = new Chart(ctx, {
+    type:'bar',
+    data:{labels:dep.map(d=>d.t),datasets:[
+      {label:'Total Bookings',data:dep.map(d=>d.b),backgroundColor:colors.map(c=>c+'66'),borderColor:colors,borderWidth:2,yAxisID:'y'},
+      {label:'Cancellation Rate %',data:dep.map(d=>d.cr),backgroundColor:'transparent',borderColor:colors.map(c=>c),borderWidth:2,type:'line',yAxisID:'y2',pointRadius:6,pointBackgroundColor:colors}
+    ]},
+    options:{...baseOpts(),scales:{
+      x:{ticks:{color:textColor(),font:{family:'DM Sans',size:11}},grid:{color:gridColor()}},
+      y:{ticks:{color:textColor(),font:{family:'DM Sans',size:10},callback:v=>fmtNum(v)},grid:{color:gridColor()},title:{display:true,text:'Bookings',color:textColor(),font:{size:10,family:'DM Sans'}}},
+      y2:{position:'right',ticks:{color:RED,font:{family:'DM Sans',size:10},callback:v=>v+'%'},grid:{display:false},title:{display:true,text:'Cancel Rate %',color:RED,font:{size:10,family:'DM Sans'}}}
+    }}
+  });
+}
+
+// --- COUNTRY BARS ---
+function renderCountryBars() {
+  const top15 = D.top20.slice(0,15);
+  const maxB = top15[0].b;
+  const flags = {PRT:'🇵🇹',GBR:'🇬🇧',FRA:'🇫🇷',ESP:'🇪🇸',DEU:'🇩🇪',ITA:'🇮🇹',IRL:'🇮🇪',BEL:'🇧🇪',BRA:'🇧🇷',NLD:'🇳🇱',USA:'🇺🇸',CHE:'🇨🇭',CN:'🇨🇳',AUT:'🇦🇹',SWE:'🇸🇪',CHN:'🇨🇳',POL:'🇵🇱',ISR:'🇮🇱',RUS:'🇷🇺',NOR:'🇳🇴'};
+  const names = {PRT:'Portugal',GBR:'UK',FRA:'France',ESP:'Spain',DEU:'Germany',ITA:'Italy',IRL:'Ireland',BEL:'Belgium',BRA:'Brazil',NLD:'Netherlands',USA:'USA',CHE:'Switzerland',CN:'China',AUT:'Austria',SWE:'Sweden',CHN:'China',POL:'Poland',ISR:'Israel',RUS:'Russia',NOR:'Norway'};
+  
+  const el = document.getElementById('country-bars');
+  el.innerHTML = top15.map(c=>{
+    const pct = c.b/maxB*100;
+    const color = c.cr>40?RED:c.cr>25?AMBER:GREEN;
+    return `<div class="bar-row">
+      <div class="bar-name" title="${names[c.c]||c.c}">${flags[c.c]||'🏳'} ${names[c.c]||c.c}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${BLUE}">
+          <span class="bar-val">${fmtNum(c.b)}</span>
+        </div>
+      </div>
+      <span style="font-size:10px;color:${color};width:38px;text-align:right;font-weight:700">${c.cr}%</span>
+    </div>`;
+  }).join('');
+}
+
+// --- INSIGHTS ---
+function updateInsights() {
+  const months = getFilteredMonthly();
+  const total = months.reduce((s,m)=>s+m.b,0);
+  const canceled = months.reduce((s,m)=>s+m.c,0);
+  const cr = total>0?(canceled/total*100).toFixed(1):0;
+  const totalRev = months.reduce((s,m)=>s+m.rev,0);
+
+  // Peak revenue month
+  const peakMonth = months.sort((a,b)=>b.rev-a.rev)[0];
+  months.sort((a,b)=>(a.y+a.mi)-(b.y+b.mi));
+
+  // City vs resort
+  const resortTotal = months.reduce((s,m)=>s+m.resort,0);
+  const cityTotal = months.reduce((s,m)=>s+m.city,0);
+
+  // Segment with highest cancellation
+  const topSegCancel = D.segments.sort((a,b)=>b.rate-a.rate)[0];
+  const lowestSegCancel = [...D.segments].sort((a,b)=>a.rate-b.rate)[0];
+
+  // Non-refundable deposit insight
+  const nonRef = D.deposit.find(d=>d.t==='Non Refund');
+  
+  // Special requests insight
+  const sr0 = D.special_req.find(s=>s.sr===0);
+  const sr5 = D.special_req.find(s=>s.sr===5);
+
+  const insights = [
+    `Overall cancellation rate is <strong>${cr}%</strong> across the filtered period, with <strong>${fmtNum(canceled)}</strong> cancellations out of <strong>${fmtNum(total)}</strong> total bookings.`,
+    peakMonth ? `Peak revenue month was <strong>${peakMonth.label}</strong> generating <strong>${fmt(peakMonth.rev)}</strong> — Jul/Aug 2017 consistently top the charts driven by summer demand.` : '',
+    `<strong>${topSegCancel.name}</strong> segment has the highest cancellation rate at <strong>${topSegCancel.rate}%</strong>, while <strong>${lowestSegCancel.name}</strong> shows the best retention at <strong>${lowestSegCancel.rate}%</strong>.`,
+    `Online TA drives <strong>${((D.segments.find(s=>s.name==='Online TA')?.b||0)/D.kpis.total*100).toFixed(1)}%</strong> of all bookings but carries elevated cancellation risk — a key revenue leakage point.`,
+    nonRef ? `<strong>Non-Refundable</strong> deposits show a <strong>${nonRef.cr}%</strong> cancellation rate — these bookings are administratively canceled but revenue is largely protected.` : '',
+    sr0 && sr5 ? `Guests with <strong>0 special requests</strong> cancel at <strong>${sr0.cr}%</strong> vs only <strong>${sr5.cr}%</strong> for guests with 5 requests — high-engagement guests are far more committed.` : '',
+    `Portugal (PRT) accounts for <strong>${(D.top20[0].b/D.kpis.total*100).toFixed(1)}%</strong> of all bookings with a <strong>${D.top20[0].cr}%</strong> cancellation rate, suggesting domestic bookings need targeted retention strategies.`
+  ].filter(Boolean);
+
+  document.getElementById('insights-list').innerHTML = insights.map(i=>`<div class="insight-item">${i}</div>`).join('');
+}
+
+// --- APPLY FILTERS ---
+function applyFilters() {
+  updateKPIs();
+  renderMonthly();
+  renderRevenue();
+  renderSegBars();
+  updateInsights();
+}
+
+// --- TOGGLE FUNCTIONS ---
+function toggleYear(btn) {
+  const y = btn.dataset.year;
+  if(activeYears.has(y)) { if(activeYears.size>1) { activeYears.delete(y); btn.classList.remove('active'); } }
+  else { activeYears.add(y); btn.classList.add('active'); }
+  applyFilters();
+}
+function toggleHotel(btn) {
+  const h = btn.dataset.hotel;
+  if(activeHotels.has(h)) { if(activeHotels.size>1) { activeHotels.delete(h); btn.classList.remove('active'); } }
+  else { activeHotels.add(h); btn.classList.add('active'); }
+  applyFilters();
+}
+function setStatus(btn) {
+  document.querySelectorAll('#statusFilters .toggle-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activeStatus = btn.dataset.status;
+  applyFilters();
+}
+function resetFilters() {
+  activeYears = new Set(['2015','2016','2017']);
+  activeHotels = new Set(['resort','city']);
+  activeStatus = 'all';
+  activeSeg = 'all';
+  activeCust = 'all';
+  document.querySelectorAll('#yearFilters .toggle-btn').forEach(b=>b.classList.add('active'));
+  document.querySelectorAll('#hotelFilters .toggle-btn').forEach(b=>b.classList.add('active'));
+  document.getElementById('segmentFilter').value='all';
+  document.getElementById('custFilter').value='all';
+  document.querySelectorAll('#statusFilters .toggle-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#statusFilters [data-status="all"]').classList.add('active');
+  applyFilters();
+}
+
+function toggleDark() {
+  document.documentElement.classList.toggle('dark');
+  const btn = document.querySelector('.dark-toggle');
+  btn.textContent = isDark() ? '☀️ Light' : '🌙 Dark';
+  // Redraw all charts
+  renderMonthly(); renderRevenue(); renderLeadTime(); renderRoomMatch(); renderDonut(); renderWeekday(); renderDeposit();
+  renderBoxPlot(); renderHeatmap(); renderSegBars(); renderCountryBars(); renderSRScatter();
+}
+
+function exportDashboard() {
+  const el = document.querySelector('.main');
+  alert('To export: use your browser\'s Print function (Ctrl+P / Cmd+P) and select "Save as PDF". For PNG, use browser screenshot or Cmd+Shift+4.');
+}
+
+// --- INIT ---
+document.addEventListener('DOMContentLoaded', () => {
+  updateKPIs();
+  renderMonthly();
+  renderRevenue();
+  renderSegBars();
+  renderBoxPlot();
+  renderLeadTime();
+  renderHeatmap();
+  renderRoomMatch();
+  renderDonut();
+  renderSRScatter();
+  renderWeekday();
+  renderDeposit();
+  renderCountryBars();
+  updateInsights();
+});
+</script>
+</body>
+</html>
